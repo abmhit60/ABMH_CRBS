@@ -19,19 +19,25 @@ export default function MyBookingsPage() {
   useEffect(() => { if (profile) fetchBookings() }, [profile])
 
   async function fetchBookings() {
-    // Query by requester_mobile — works for both staff_directory and auth users
+  if (!profile) return
+
+  let query = supabase
+    .from('bookings')
+    .select('*, rooms(name, location)')
+    .order('start_time', { ascending: false })
+
+  if (profile.source === 'supabase_auth') {
+    query = query.eq('booked_by', profile.id)
+  } else {
     const mobile = profile?.mobile || profile?.requester_mobile
     if (!mobile) { setLoading(false); return }
+    query = query.eq('requester_mobile', mobile)
+  }
 
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*, rooms(name, location)')
-      .eq('requester_mobile', mobile)
-      .order('start_time', { ascending: false })
-
-    console.log('my bookings:', data, 'error:', error, 'mobile:', mobile)
-    setBookings(data || [])
-    setLoading(false)
+  const { data } = await query
+  setBookings(data || [])
+  setLoading(false)
+}
   }
 
   async function cancelBooking(id) {
