@@ -38,7 +38,6 @@ export default function MyBookingsPage() {
   setBookings(data || [])
   setLoading(false)
 }
-  }
 
   async function cancelBooking(id) {
     if (!confirm('Cancel this booking?')) return
