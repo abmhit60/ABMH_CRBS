@@ -70,8 +70,10 @@ export default function CalendarPage() {
   function handleRoomColClick(day, roomId, e) {
     const y = e.clientY - e.currentTarget.getBoundingClientRect().top
     const hour = Math.floor(y / HOUR_H) + START_H
+    const slotTime = new Date(day)
+    slotTime.setHours(hour, 0, 0, 0)
+    if (slotTime < new Date()) { alert('Cannot book a past time slot.'); return }
     if (isRoomBooked(day, roomId, hour)) { alert('This slot is already booked.'); return }
-    const room = rooms.find(r => r.id === roomId)
     navigate(`/book?date=${format(day, 'yyyy-MM-dd')}&hour=${hour}&room=${roomId}`)
   }
 
