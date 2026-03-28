@@ -115,7 +115,7 @@ export default function CalendarPage() {
             {rooms.map(room => (
               <div key={room.id} style={{ flex: 1, minWidth: 160, borderLeft: '0.5px solid var(--border)' }}>
                 {/* Room header — sticky top */}
-                <div style={{ height: 64, position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface-2)', borderBottom: '2px solid var(--border)', padding: '8px', textAlign: 'center', boxSizing: 'border-box' }}>
+                <div style={{height: 64, position: 'relative', zIndex: 2, background: 'var(--surface-2)', borderBottom: '2px solid var(--border)', padding: '8px', textAlign: 'center', boxSizing: 'border-box' }}>
                   <div style={{ width: 10, height: 10, background: ROOM_COLORS[room.name] ?? '#6366f1', borderRadius: '50%', margin: '0 auto 4px' }} />
                   <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{room.name}</div>
                   <div style={{ fontSize: 10, color: 'var(--text-3)' }}>Cap: {room.capacity}</div>
