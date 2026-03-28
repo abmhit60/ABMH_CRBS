@@ -113,7 +113,7 @@ export default function CalendarPage() {
 
             {/* Room columns */}
             {rooms.map(room => (
-              <div key={room.id} style={{ flexShrink: 0, width: 160, borderLeft: '0.5px solid var(--border)' }}>
+              <div key={room.id} style={{ flex: 1, minWidth: 160, borderLeft: '0.5px solid var(--border)' }}>
                 {/* Room header — sticky top */}
                 <div style={{ height: 64, position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface-2)', borderBottom: '2px solid var(--border)', padding: '8px', textAlign: 'center', boxSizing: 'border-box' }}>
                   <div style={{ width: 10, height: 10, background: ROOM_COLORS[room.name] ?? '#6366f1', borderRadius: '50%', margin: '0 auto 4px' }} />
