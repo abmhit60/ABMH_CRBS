@@ -41,7 +41,7 @@ export default function LoginPage() {
     e.preventDefault(); setError(''); setLoading(true)
     const { error } = await signInAsAdmin(username, password)
     setLoading(false)
-    if (error) setError(error.message) else navigate('/')
+    if (error) { setError(error.message) } else { navigate('/') }
   }
 
   return (
