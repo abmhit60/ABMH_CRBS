@@ -272,25 +272,24 @@ export default function CalendarPage() {
               <div style={{ height: HEADER_H, borderBottom: '2px solid var(--border)', borderRight: '1px solid var(--border)', background: 'var(--surface-2)' }} />
               {/* Time labels — one per slot, only show on hour */}
               {SLOTS.map((slot, i) => (
-                <div key={i} style={{
-                  height: SLOT_H,
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'flex-end',
-                  paddingRight: 8,
-                  paddingTop: slot.m === 0 ? 0 : undefined,
-                  transform: slot.m === 0 ? 'translateY(-7px)' : undefined,
-                  fontSize: 11,
-                  color: slot.m === 0 ? 'var(--text-3)' : 'transparent',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  borderTop: '1px solid var(--border)',
-                  borderRight: '1px solid var(--border)',
-                  background: 'var(--surface)',
-                  boxSizing: 'border-box',
-                }}>
-                  {slot.m === 0 ? format(new Date(2000, 0, 1, slot.h, 0), 'h a') : ''}
-                </div>
-              ))}
+  <div key={i} style={{
+    height: SLOT_H,
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
+    paddingRight: 8,
+    paddingTop: 2,
+    fontSize: 11,
+    color: slot.m === 0 ? 'var(--text-3)' : 'transparent',
+    fontFamily: "'JetBrains Mono', monospace",
+    borderTop: slot.m === 0 ? '1px solid var(--border)' : '1px solid transparent',
+    borderRight: '1px solid var(--border)',
+    background: 'var(--surface)',
+    boxSizing: 'border-box',
+  }}>
+    {slot.m === 0 ? format(new Date(2000, 0, 1, slot.h, 0), 'h a') : ''}
+  </div>
+))}
             </div>
 
             {/* Room columns */}
@@ -316,15 +315,15 @@ export default function CalendarPage() {
                     onClick={e => slotClick(room, selDay, e)}>
                     {/* Grid lines — one per 30-min slot */}
                     {SLOTS.map((slot, i) => (
-                      <div key={i} style={{
-                        position: 'absolute', left: 0, right: 0,
-                        top: i * SLOT_H, height: SLOT_H,
-                        borderTop: `1px solid ${slot.m === 0 ? 'var(--border)' : 'var(--border)'}`,
-                        background: slot.m === 0 ? 'transparent' : 'rgba(0,0,0,.008)',
-                        boxSizing: 'border-box',
-                        pointerEvents: 'none',
-                      }} />
-                    ))}
+  <div key={i} style={{
+    position: 'absolute', left: 0, right: 0,
+    top: i * SLOT_H, height: SLOT_H,
+    borderTop: slot.m === 0 ? '1px solid var(--border)' : '1px solid transparent',
+    background: slot.m === 0 ? 'transparent' : 'rgba(0,0,0,.008)',
+    boxSizing: 'border-box',
+    pointerEvents: 'none',
+  }} />
+))}
                     {/* Events */}
                     {bkForDay(selDay, room.id).map(b => <EventBlock key={b.id} b={b} />)}
                   </div>
