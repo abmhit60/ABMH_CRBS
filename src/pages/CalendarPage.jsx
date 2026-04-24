@@ -48,7 +48,7 @@ function htPx(b) {
 }
 
 const TOTAL_H = SLOTS.length * SLOT_H
-const HEADER_H = 54
+const HEADER_H = 72
 
 export default function CalendarPage() {
   const { profile } = useAuth()
