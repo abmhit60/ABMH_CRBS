@@ -8,18 +8,31 @@ const ROLES = [
   { key: 'admin', label: 'Admin', icon: '🔐' },
 ]
 
+const pinInputStyle = {
+  width: '100%', padding: '13px 16px',
+  border: '1.5px solid #e2e8f0', borderRadius: 10,
+  fontSize: 22, fontFamily: 'monospace', color: '#0d1b2a',
+  background: '#fff', outline: 'none', letterSpacing: 8,
+  textAlign: 'center', boxSizing: 'border-box',
+}
+
 export default function LoginPage() {
-  const { profile, signInWithPin, signInAsAdmin } = useAuth()
+  const { profile, signInAsAdmin } = useAuth()
   const navigate = useNavigate()
   const [mode, setMode] = useState('staff')
   const [depts, setDepts] = useState([])
   const [staff, setStaff] = useState([])
   const [dept, setDept] = useState('')
   const [person, setPerson] = useState(null)
+  const [pin, setPin] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [changingPin, setChangingPin] = useState(false)
+  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+  const [pinMsg, setPinMsg] = useState('')
 
   useEffect(() => { if (profile) navigate('/') }, [profile])
   useEffect(() => {
@@ -31,13 +44,16 @@ export default function LoginPage() {
     supabase.from('staff_directory')
       .select('id,full_name,mobile,pin,department_id,departments(name)')
       .eq('department_id', dept).eq('is_active', true).order('full_name')
-      .then(({ data }) => { setStaff(data || []); setPerson(null) })
+      .then(({ data }) => { setStaff(data || []); setPerson(null); setPin(''); setChangingPin(false) })
   }, [dept])
 
   async function doStaffLogin() {
     if (!person) { setError('Please select your name.'); return }
-    setLoading(true)
-    // Sign in without PIN — just select name and go
+    setError(''); setLoading(true)
+    if (person.pin) {
+      if (!pin) { setError('Please enter your PIN.'); setLoading(false); return }
+      if (pin !== person.pin) { setError('Incorrect PIN. Please try again.'); setLoading(false); return }
+    }
     const session = {
       id: person.id, full_name: person.full_name, mobile: person.mobile,
       role: 'staff', department_id: person.department_id,
@@ -45,6 +61,22 @@ export default function LoginPage() {
     }
     localStorage.setItem('crbs_session', JSON.stringify(session))
     window.location.href = '/'
+  }
+
+  async function doChangePin() {
+    if (!person) return
+    if (!newPin || newPin.length < 4) { setPinMsg('PIN must be at least 4 digits.'); return }
+    if (newPin !== confirmPin) { setPinMsg('PINs do not match.'); return }
+    setLoading(true); setPinMsg('')
+    const { error } = await supabase.from('staff_directory')
+      .update({ pin: newPin }).eq('id', person.id)
+    setLoading(false)
+    if (error) { setPinMsg('Failed to update PIN. Try again.'); return }
+    setPerson(p => ({ ...p, pin: newPin }))
+    setNewPin(''); setConfirmPin('')
+    setChangingPin(false)
+    setPinMsg('✓ PIN updated successfully!')
+    setTimeout(() => setPinMsg(''), 3000)
   }
 
   async function doAdminLogin(e) {
@@ -58,8 +90,7 @@ export default function LoginPage() {
     width: '100%', padding: '13px 16px',
     border: '1.5px solid #e2e8f0', borderRadius: 10,
     fontSize: 15, fontFamily: 'inherit', color: '#0d1b2a',
-    background: '#fff', outline: 'none',
-    transition: 'border-color .15s',
+    background: '#fff', outline: 'none', transition: 'border-color .15s',
     colorScheme: 'light', appearance: 'none',
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center',
@@ -89,6 +120,7 @@ export default function LoginPage() {
             Conference Room Booking Portal
           </p>
         </div>
+
         {/* Role selector */}
         <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: 14, padding: 4, gap: 4, marginBottom: 20 }}>
           {ROLES.map(r => (
@@ -127,12 +159,86 @@ export default function LoginPage() {
               <div>
                 <label style={labelStyle}>Employee Name</label>
                 <select value={person?.id || ''} disabled={!dept}
-                  onChange={e => setPerson(staff.find(s => s.id === e.target.value) || null)}
+                  onChange={e => {
+                    setPerson(staff.find(s => s.id === e.target.value) || null)
+                    setPin(''); setChangingPin(false); setPinMsg('')
+                  }}
                   style={{ ...inputStyle, opacity: !dept ? 0.5 : 1 }}>
                   <option value="">{!dept ? 'Select department first' : staff.length === 0 ? 'No staff found' : 'Select your name'}</option>
                   {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
                 </select>
               </div>
+
+              {/* PIN entry */}
+              {person && !changingPin && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <label style={labelStyle}>
+                      {person.pin ? 'Enter PIN' : 'PIN (not set)'}
+                    </label>
+                    <button onClick={() => { setChangingPin(true); setPinMsg(''); setError('') }}
+                      style={{ fontSize: 12, color: '#c0392b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                      🔑 {person.pin ? 'Change PIN' : 'Set PIN'}
+                    </button>
+                  </div>
+                  <input
+                    type="password" inputMode="numeric" maxLength={6}
+                    value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+                    placeholder={person.pin ? '••••' : 'No PIN set'}
+                    disabled={!person.pin}
+                    style={{ ...pinInputStyle, opacity: !person.pin ? 0.4 : 1 }}
+                  />
+                  {!person.pin && (
+                    <p style={{ fontSize: 12, color: '#f59e0b', marginTop: 6 }}>
+                      ⚠️ No PIN set. Click "Set PIN" above to create one before logging in.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Change PIN form */}
+              {person && changingPin && (
+                <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0d1b2a', marginBottom: 12 }}>
+                    🔑 {person.pin ? 'Change PIN' : 'Set PIN'}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div>
+                      <label style={labelStyle}>New PIN</label>
+                      <input type="password" inputMode="numeric" maxLength={6}
+                        value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))}
+                        placeholder="Enter new PIN" autoFocus
+                        style={pinInputStyle} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Confirm PIN</label>
+                      <input type="password" inputMode="numeric" maxLength={6}
+                        value={confirmPin} onChange={e => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                        placeholder="Re-enter PIN"
+                        style={pinInputStyle} />
+                    </div>
+                    {pinMsg && (
+                      <div style={{ fontSize: 13, color: pinMsg.startsWith('✓') ? '#059669' : '#dc2626', fontWeight: 500 }}>
+                        {pinMsg}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => { setChangingPin(false); setNewPin(''); setConfirmPin(''); setPinMsg('') }}
+                        style={{ flex: 1, padding: '10px', background: '#e2e8f0', color: '#64748b', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer' }}>
+                        Cancel
+                      </button>
+                      <button onClick={doChangePin} disabled={loading}
+                        style={{ flex: 1, padding: '10px', background: '#c0392b', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer' }}>
+                        {loading ? 'Saving...' : 'Save PIN'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {pinMsg && !changingPin && (
+                <div style={{ fontSize: 13, color: '#059669', fontWeight: 500 }}>{pinMsg}</div>
+              )}
 
               {error && (
                 <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 10, padding: '10px 14px', fontSize: 13 }}>
@@ -140,16 +246,16 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <button onClick={doStaffLogin} disabled={loading || !person}
+              <button onClick={doStaffLogin} disabled={loading || !person || changingPin || !person?.pin}
                 style={{
                   width: '100%', padding: '14px', marginTop: 4,
-                  background: !person ? '#e2e8f0' : '#c0392b',
-                  color: !person ? '#94a3b8' : '#fff',
+                  background: (!person || changingPin || !person?.pin) ? '#e2e8f0' : '#c0392b',
+                  color: (!person || changingPin || !person?.pin) ? '#94a3b8' : '#fff',
                   border: 'none', borderRadius: 12,
                   fontSize: 15, fontWeight: 700, fontFamily: 'inherit',
-                  cursor: !person ? 'not-allowed' : 'pointer',
+                  cursor: (!person || changingPin || !person?.pin) ? 'not-allowed' : 'pointer',
                   transition: 'all .2s', letterSpacing: 0.3,
-                  boxShadow: !person ? 'none' : '0 4px 14px rgba(192,57,43,.4)',
+                  boxShadow: (!person || changingPin || !person?.pin) ? 'none' : '0 4px 14px rgba(192,57,43,.4)',
                 }}>
                 {loading ? 'Signing in...' : 'Continue →'}
               </button>
