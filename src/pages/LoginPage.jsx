@@ -80,7 +80,16 @@ export default function LoginPage() {
 
         {/* Branding */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <img src="/crbs-logo.png" alt="ABMH" style={{ height: 64, display: 'block', margin: '0 auto 14px' }} />
+          <img
+  src="/abmh-logo.png"
+  alt="Aditya Birla Memorial Hospital"
+  style={{
+    width: '100%',
+    maxWidth: 320,
+    display: 'block',
+    borderRadius: 8,
+  }}
+/>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0d1b2a', letterSpacing: -0.5, lineHeight: 1.2, margin: 0 }}>
             Aditya Birla Memorial Hospital
           </h1>
