@@ -81,24 +81,14 @@ export default function LoginPage() {
         {/* Branding */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <img
-  src="/abmh-logo.png"
-  alt="Aditya Birla Memorial Hospital"
-  style={{
-    width: '100%',
-    maxWidth: 320,
-    display: 'block',
-    borderRadius: 8,
-    margin: '0 auto',
-  }}
-/>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0d1b2a', letterSpacing: -0.5, lineHeight: 1.2, margin: 0 }}>
-            Aditya Birla Memorial Hospital
-          </h1>
+            src="/abmh-logo.png"
+            alt="Aditya Birla Memorial Hospital"
+            style={{ width: '100%', maxWidth: 320, display: 'block', borderRadius: 8, margin: '0 auto 12px auto' }}
+          />
           <p style={{ fontSize: 14, color: '#94a3b8', marginTop: 6, fontWeight: 500, letterSpacing: 0.3 }}>
             Conference Room Booking Portal
           </p>
         </div>
-
         {/* Role selector */}
         <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: 14, padding: 4, gap: 4, marginBottom: 20 }}>
           {ROLES.map(r => (
