@@ -88,6 +88,7 @@ export default function LoginPage() {
     maxWidth: 320,
     display: 'block',
     borderRadius: 8,
+    margin: '0 auto',
   }}
 />
           <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0d1b2a', letterSpacing: -0.5, lineHeight: 1.2, margin: 0 }}>
