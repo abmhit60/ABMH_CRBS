@@ -72,10 +72,13 @@ export default function LoginPage() {
       .update({ pin: newPin }).eq('id', person.id)
     setLoading(false)
     if (error) { setPinMsg('Failed to update PIN. Try again.'); return }
-    setPerson(p => ({ ...p, pin: newPin }))
+    const updatedPerson = { ...person, pin: newPin }
+    setPerson(updatedPerson)
+    setStaff(prev => prev.map(s => s.id === person.id ? updatedPerson : s))
+    
     setNewPin(''); setConfirmPin('')
     setChangingPin(false)
-    setPinMsg('✓ PIN updated successfully!')
+    setPinMsg('✓ PIN set successfully! You can now log in.')
     setTimeout(() => setPinMsg(''), 3000)
   }
 
