@@ -313,11 +313,22 @@ export default function CalendarPage() {
           ))}
         </div>
 
-        <div className="cal-grid">
-          <div className="cal-grid-inner">
+        {/* Grid */}
+        <div className="cal-grid" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 280px)', overflowX: 'auto' }}>
+          <div className="cal-grid-inner" style={{ display: 'flex', minWidth: 'max-content' }}>
 
-            <div style={{ flexShrink: 0, width: TIME_COL_W, position: 'sticky', left: 0, zIndex: 3, background: 'var(--surface)' }}>
-              <div style={{ height: HEADER_H, borderBottom: '2px solid var(--border)', borderRight: '1px solid var(--border)', background: 'var(--surface-2)' }} />
+            {/* Time column */}
+            <div style={{ flexShrink: 0, width: TIME_COL_W, position: 'sticky', left: 0, zIndex: 4, background: 'var(--surface)' }}>
+              {/* Sticky header spacer */}
+              <div style={{
+                height: HEADER_H,
+                borderBottom: '2px solid var(--border)',
+                borderRight: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+                position: 'sticky',
+                top: 0,
+                zIndex: 4,
+              }} />
               {SLOTS.map((slot, i) => (
                 <div key={i} style={{
                   height: SLOT_H,
@@ -339,22 +350,28 @@ export default function CalendarPage() {
               ))}
             </div>
 
+            {/* Room columns */}
             <div style={{ display: 'flex', flex: 1 }}>
               {rooms.map(room => (
                 <div key={room.id} style={{ flex: 1, minWidth: 160, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
+                  {/* Sticky room header */}
                   <div style={{
                     height: HEADER_H,
                     padding: '8px 10px',
                     background: 'var(--surface-2)',
                     borderBottom: '2px solid var(--border)',
                     display: 'flex', flexDirection: 'column', justifyContent: 'center',
-                    flexShrink: 0, position: 'sticky', top: 0, zIndex: 2,
+                    flexShrink: 0,
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 3,
                   }}>
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: rc(room.name), marginBottom: 3 }} />
                     <div style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{room.name}</div>
                     <div style={{ fontSize: 10, color: 'var(--text-3)' }}>Cap: {room.capacity}</div>
                   </div>
 
+                  {/* Slot body */}
                   <div style={{ position: 'relative', height: TOTAL_H, cursor: 'pointer' }}
                     onClick={e => slotClick(room, selDay, e)}>
                     {SLOTS.map((slot, i) => (
