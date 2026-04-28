@@ -38,12 +38,12 @@ function minutesToPx(mins) {
 function topPx(b) {
   const s = parseISO(b.start_time)
   const minsFromStart = (s.getHours() - START_H) * 60 + s.getMinutes()
-  return minutesToPx(minsFromStart)
+  return (minsFromStart / 60) * (SLOT_H * 2)
 }
 
 function htPx(b) {
   const mins = differenceInMinutes(parseISO(b.end_time), parseISO(b.start_time))
-  return Math.max(minutesToPx(mins), SLOT_H / 2)
+  return Math.max((mins / 60) * (SLOT_H * 2), 14)
 }
 
 const TOTAL_H = SLOTS.length * SLOT_H
