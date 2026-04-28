@@ -34,15 +34,15 @@ function eventColor(b) {
 function topPx(b) {
   const s = parseISO(b.start_time)
   const minsFromStart = (s.getHours() - START_H) * 60 + s.getMinutes()
-  return Math.max((minsFromStart / 60) * (SLOT_H * 2), 0)
+  return (minsFromStart / 30) * SLOT_H
 }
 
 function htPx(b) {
   const mins = differenceInMinutes(parseISO(b.end_time), parseISO(b.start_time))
-  return Math.max((mins / 60) * (SLOT_H * 2), 14)
+  return Math.max((mins / 30) * SLOT_H, 10)
 }
 
-const TOTAL_H = SLOT_H * 2 * (END_H - START_H)
+const TOTAL_H = SLOTS.length * SLOT_H
 const HEADER_H = 72
 
 const EventBlock = ({ b, canSee }) => {
