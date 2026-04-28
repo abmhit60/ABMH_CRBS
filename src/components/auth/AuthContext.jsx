@@ -19,15 +19,32 @@ export function AuthProvider({ children }) {
     setProfile(session); return { error: null }
   }
 
-  async function signInAsAdmin(username, password) {
-    const ADMINS = { 'admin': { password: 'admin123', name: 'Smita Hule', role: 'owner' }, 'smita': { password: 'admin123', name: 'Smita Hule', role: 'owner' } }
-    const admin = ADMINS[username.toLowerCase().trim()]
-    if (!admin) return { error: { message: 'Invalid username.' } }
-    if (admin.password !== password) return { error: { message: 'Incorrect password.' } }
-    const session = { id: 'admin-session', full_name: admin.name, role: admin.role, source: 'supabase_auth' }
-    localStorage.setItem('crbs_session', JSON.stringify(session))
-    setProfile(session); return { error: null }
+ async function signInAsAdmin(username, password) {
+  const ADMINS = {
+    'admin': { password: 'admin123', name: 'Smita Hule', role: 'owner' },
+    'smita': { password: 'admin123', name: 'Smita Hule', role: 'owner' }
   }
+  const admin = ADMINS[username.toLowerCase().trim()]
+  if (!admin) return { error: { message: 'Invalid username.' } }
+  if (admin.password !== password) return { error: { message: 'Incorrect password.' } }
+
+  // Sign in via Supabase Auth to get real UUID
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: 'healthcare@adityabirla.com',
+    password: password,
+  })
+  if (error) return { error: { message: 'Admin auth failed. Check Supabase credentials.' } }
+
+  const session = {
+    id: data.user.id,  // real UUID now
+    full_name: admin.name,
+    role: admin.role,
+    source: 'supabase_auth'
+  }
+  localStorage.setItem('crbs_session', JSON.stringify(session))
+  setProfile(session)
+  return { error: null }
+}
 
   async function signOut() {
     await supabase.auth.signOut().catch(() => {})
