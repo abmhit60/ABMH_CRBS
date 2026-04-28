@@ -48,6 +48,7 @@ const HEADER_H = 72
 
 const EventBlock = ({ b, canSee }) => {
   const [tooltip, setTooltip] = useState(false)
+  console.log(b.title, '| top:', topPx(b), '| height:', htPx(b), '| mins:', (new Date(b.end_time) - new Date(b.start_time)) / 60000)
   return (
     <div className="cal-event"
       style={{ top: topPx(b), height: htPx(b), background: eventColor(b) }}
