@@ -31,14 +31,10 @@ function eventColor(b) {
   return rc(b.rooms?.name)
 }
 
-function minutesToPx(mins) {
-  return (mins / 30) * SLOT_H
-}
-
 function topPx(b) {
   const s = parseISO(b.start_time)
   const minsFromStart = (s.getHours() - START_H) * 60 + s.getMinutes()
-  return (minsFromStart / 60) * (SLOT_H * 2)
+  return Math.max((minsFromStart / 60) * (SLOT_H * 2), 0)
 }
 
 function htPx(b) {
@@ -46,8 +42,59 @@ function htPx(b) {
   return Math.max((mins / 60) * (SLOT_H * 2), 14)
 }
 
-const TOTAL_H = SLOTS.length * SLOT_H
+const TOTAL_H = SLOT_H * 2 * (END_H - START_H)
 const HEADER_H = 72
+
+const EventBlock = ({ b, canSee }) => {
+  const [tooltip, setTooltip] = useState(false)
+  return (
+    <div className="cal-event"
+      style={{ top: topPx(b), height: htPx(b), background: eventColor(b) }}
+      onClick={e => e.stopPropagation()}
+      onMouseEnter={() => setTooltip(true)}
+      onMouseLeave={() => setTooltip(false)}
+      onTouchStart={e => { e.stopPropagation(); setTooltip(v => !v) }}
+    >
+      <span className="cal-event-title">{canSee(b) ? b.title : '🔒 Booked'}</span>
+      <span className="cal-event-time">
+        {format(parseISO(b.start_time), 'h:mm a')} – {format(parseISO(b.end_time), 'h:mm a')}
+      </span>
+      <span className="cal-event-who">{b.requester_name}</span>
+      {b.status === 'pending' && <span className="cal-event-tag">Pending</span>}
+
+      {tooltip && (
+        <div style={{
+          position: 'absolute', bottom: 'calc(100% + 6px)', left: 0,
+          background: '#0d1b2a', color: '#fff', borderRadius: 10,
+          padding: '10px 14px', zIndex: 50, minWidth: 200, maxWidth: 260,
+          boxShadow: '0 8px 24px rgba(0,0,0,.3)',
+          fontSize: 12, lineHeight: 1.6, pointerEvents: 'none',
+        }}>
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>
+            {canSee(b) ? b.title : '🔒 Booked'}
+          </div>
+          <div>🕐 {format(parseISO(b.start_time), 'h:mm a')} – {format(parseISO(b.end_time), 'h:mm a')}</div>
+          <div>👤 {b.requester_name}</div>
+          {b.requester_dept && <div>🏢 {b.requester_dept}</div>}
+          {b.attendees_count && <div>👥 {b.attendees_count} attendee{b.attendees_count > 1 ? 's' : ''}</div>}
+          <div style={{
+            marginTop: 6, fontSize: 11, fontWeight: 600,
+            color: b.status === 'pending' ? '#fbbf24' : b.status === 'confirmed' ? '#34d399' : '#9ca3af'
+          }}>
+            {b.status === 'pending' ? '⏳ Pending approval' : b.status === 'confirmed' ? '✓ Confirmed' : '✕ Cancelled'}
+          </div>
+          <div style={{
+            position: 'absolute', bottom: -6, left: 16,
+            width: 0, height: 0,
+            borderLeft: '6px solid transparent',
+            borderRight: '6px solid transparent',
+            borderTop: '6px solid #0d1b2a',
+          }} />
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function CalendarPage() {
   const { profile } = useAuth()
@@ -185,7 +232,7 @@ export default function CalendarPage() {
       </div>
       <div className="meta-row">
         <span className="meta-chip">📅 {format(popup.date, 'EEE, dd MMM')}</span>
-        <span className="meta-chip">🕐 {String(form.startHour).padStart(2,'0')}:{String(form.startMin).padStart(2,'0')}</span>
+        <span className="meta-chip">🕐 {String(form.startHour).padStart(2, '0')}:{String(form.startMin).padStart(2, '0')}</span>
       </div>
       <div className="req-block">
         <div className="req-row"><span className="req-label">Booking for</span><span className="req-val">{profile?.full_name}</span></div>
@@ -236,57 +283,6 @@ export default function CalendarPage() {
       )}
     </>
   )
-
-  const EventBlock = ({ b }) => {
-    const [tooltip, setTooltip] = useState(false)
-    return (
-      <div className="cal-event"
-        style={{ top: topPx(b), height: htPx(b), background: eventColor(b) }}
-        onClick={e => e.stopPropagation()}
-        onMouseEnter={() => setTooltip(true)}
-        onMouseLeave={() => setTooltip(false)}
-        onTouchStart={() => setTooltip(v => !v)}
-      >
-        <span className="cal-event-title">{canSee(b) ? b.title : '🔒 Booked'}</span>
-        <span className="cal-event-time">
-          {format(parseISO(b.start_time), 'h:mm a')} – {format(parseISO(b.end_time), 'h:mm a')}
-        </span>
-        <span className="cal-event-who">{b.requester_name}</span>
-        {b.status === 'pending' && <span className="cal-event-tag">Pending</span>}
-
-        {tooltip && (
-          <div style={{
-            position: 'absolute', bottom: 'calc(100% + 6px)', left: 0,
-            background: '#0d1b2a', color: '#fff', borderRadius: 10,
-            padding: '10px 14px', zIndex: 50, minWidth: 200, maxWidth: 260,
-            boxShadow: '0 8px 24px rgba(0,0,0,.3)',
-            fontSize: 12, lineHeight: 1.6, pointerEvents: 'none',
-          }}>
-            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>
-              {canSee(b) ? b.title : '🔒 Booked'}
-            </div>
-            <div>🕐 {format(parseISO(b.start_time), 'h:mm a')} – {format(parseISO(b.end_time), 'h:mm a')}</div>
-            <div>👤 {b.requester_name}</div>
-            {b.requester_dept && <div>🏢 {b.requester_dept}</div>}
-            {b.attendees_count && <div>👥 {b.attendees_count} attendee{b.attendees_count > 1 ? 's' : ''}</div>}
-            <div style={{
-              marginTop: 6, fontSize: 11, fontWeight: 600,
-              color: b.status === 'pending' ? '#fbbf24' : b.status === 'confirmed' ? '#34d399' : '#9ca3af'
-            }}>
-              {b.status === 'pending' ? '⏳ Pending approval' : b.status === 'confirmed' ? '✓ Confirmed' : '✕ Cancelled'}
-            </div>
-            <div style={{
-              position: 'absolute', bottom: -6, left: 16,
-              width: 0, height: 0,
-              borderLeft: '6px solid transparent',
-              borderRight: '6px solid transparent',
-              borderTop: '6px solid #0d1b2a',
-            }} />
-          </div>
-        )}
-      </div>
-    )
-  }
 
   return (
     <div>
@@ -371,7 +367,7 @@ export default function CalendarPage() {
                         pointerEvents: 'none',
                       }} />
                     ))}
-                    {bkForDay(selDay, room.id).map(b => <EventBlock key={b.id} b={b} />)}
+                    {bkForDay(selDay, room.id).map(b => <EventBlock key={b.id} b={b} canSee={canSee} />)}
                   </div>
                 </div>
               ))}
