@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../components/auth/AuthContext'
-import { format, startOfWeek, addDays, isSameDay, parseISO, differenceInMinutes } from 'date-fns'
+import { format, startOfWeek, addDays, isSameDay } from 'date-fns'
 
 const SLOT_H = 32
 const START_H = 8
@@ -10,8 +10,8 @@ const TIME_COL_W = 56
 
 const SLOTS = []
 for (let h = START_H; h < END_H; h++) {
-  SLOTS.push({ h, m: 0, label: format(new Date(2000, 0, 1, h, 0), 'h:mm a') })
-  SLOTS.push({ h, m: 30, label: '' })
+  SLOTS.push({ h, m: 0 })
+  SLOTS.push({ h, m: 30 })
 }
 
 const COLORS = {
@@ -32,13 +32,13 @@ function eventColor(b) {
 }
 
 function topPx(b) {
-  const s = parseISO(b.start_time)
+  const s = new Date(b.start_time)
   const minsFromStart = (s.getHours() - START_H) * 60 + s.getMinutes()
-  return (minsFromStart / 30) * SLOT_H
+  return Math.max((minsFromStart / 30) * SLOT_H, 0)
 }
 
 function htPx(b) {
-  const mins = differenceInMinutes(parseISO(b.end_time), parseISO(b.start_time))
+  const mins = (new Date(b.end_time) - new Date(b.start_time)) / 60000
   return Math.max((mins / 30) * SLOT_H, 10)
 }
 
@@ -57,7 +57,7 @@ const EventBlock = ({ b, canSee }) => {
     >
       <span className="cal-event-title">{canSee(b) ? b.title : '🔒 Booked'}</span>
       <span className="cal-event-time">
-        {format(parseISO(b.start_time), 'h:mm a')} – {format(parseISO(b.end_time), 'h:mm a')}
+        {format(new Date(b.start_time), 'h:mm a')} – {format(new Date(b.end_time), 'h:mm a')}
       </span>
       <span className="cal-event-who">{b.requester_name}</span>
       {b.status === 'pending' && <span className="cal-event-tag">Pending</span>}
@@ -73,7 +73,7 @@ const EventBlock = ({ b, canSee }) => {
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>
             {canSee(b) ? b.title : '🔒 Booked'}
           </div>
-          <div>🕐 {format(parseISO(b.start_time), 'h:mm a')} – {format(parseISO(b.end_time), 'h:mm a')}</div>
+          <div>🕐 {format(new Date(b.start_time), 'h:mm a')} – {format(new Date(b.end_time), 'h:mm a')}</div>
           <div>👤 {b.requester_name}</div>
           {b.requester_dept && <div>🏢 {b.requester_dept}</div>}
           {b.attendees_count && <div>👥 {b.attendees_count} attendee{b.attendees_count > 1 ? 's' : ''}</div>}
@@ -124,15 +124,17 @@ export default function CalendarPage() {
   useEffect(() => { fetchBk() }, [weekStart])
 
   async function fetchBk() {
+    const from = new Date(weekStart); from.setHours(0, 0, 0, 0)
+    const to = new Date(addDays(weekStart, 7)); to.setHours(0, 0, 0, 0)
     const { data } = await supabase.from('bookings').select('*, rooms(name)')
       .in('status', ['confirmed', 'pending'])
-      .gte('start_time', weekStart.toISOString())
-      .lt('start_time', addDays(weekStart, 7).toISOString())
+      .gte('start_time', from.toISOString())
+      .lt('start_time', to.toISOString())
     setBookings(data || [])
   }
 
   const bkForDay = (day, rid) =>
-    bookings.filter(b => b.room_id === rid && isSameDay(parseISO(b.start_time), day))
+    bookings.filter(b => b.room_id === rid && isSameDay(new Date(b.start_time), day))
 
   const canSee = b =>
     isOwner || (profile?.mobile && b.requester_mobile === profile.mobile)
@@ -149,7 +151,7 @@ export default function CalendarPage() {
     const endSt = new Date(st.getTime() + 30 * 60000)
     const conflict = bookings.find(b => {
       if (b.room_id !== room.id) return false
-      const bs = parseISO(b.start_time), be = parseISO(b.end_time)
+      const bs = new Date(b.start_time), be = new Date(b.end_time)
       return isSameDay(bs, day) && bs < endSt && be > st
     })
     if (conflict) return
@@ -319,7 +321,6 @@ export default function CalendarPage() {
 
             {/* Time column */}
             <div style={{ flexShrink: 0, width: TIME_COL_W, position: 'sticky', left: 0, zIndex: 4, background: 'var(--surface)' }}>
-              {/* Sticky header spacer */}
               <div style={{
                 height: HEADER_H,
                 borderBottom: '2px solid var(--border)',
@@ -354,7 +355,6 @@ export default function CalendarPage() {
             <div style={{ display: 'flex', flex: 1 }}>
               {rooms.map(room => (
                 <div key={room.id} style={{ flex: 1, minWidth: 160, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
-                  {/* Sticky room header */}
                   <div style={{
                     height: HEADER_H,
                     padding: '8px 10px',
@@ -371,7 +371,6 @@ export default function CalendarPage() {
                     <div style={{ fontSize: 10, color: 'var(--text-3)' }}>Cap: {room.capacity}</div>
                   </div>
 
-                  {/* Slot body */}
                   <div style={{ position: 'relative', height: TOTAL_H, cursor: 'pointer' }}
                     onClick={e => slotClick(room, selDay, e)}>
                     {SLOTS.map((slot, i) => (
