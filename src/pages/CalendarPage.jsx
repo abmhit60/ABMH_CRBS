@@ -1,3 +1,4 @@
+console.log('CalendarPage version: TZ-FIX-2')
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../components/auth/AuthContext'
