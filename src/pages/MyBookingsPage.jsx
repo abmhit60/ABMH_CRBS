@@ -155,7 +155,7 @@ export default function MyBookingsPage() {
             )}
 
             {/* ACTIONS */}
-            {(b.status === 'pending' || b.status === 'confirmed') && rescheduling !== b.id && (
+            {(b.status === 'pending' || b.status === 'confirmed') && rescheduling !== b.id && new Date(b.end_time) > new Date() && (
               <div className="bcard-actions" style={{ marginTop: 10 }}>
                 <button className="btn btn-outline btn-sm"
                   onClick={() => {
