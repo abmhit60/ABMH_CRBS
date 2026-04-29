@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { format, parseISO, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns'
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns'
 
 export default function ReportsPage() {
   const [bookings, setBookings] = useState([])
@@ -39,14 +39,32 @@ export default function ReportsPage() {
 
   function exportCSV() {
     if (!bookings.length) { alert('Run report first.'); return }
-    const hdrs = ['#', 'Date', 'Start', 'End', 'Room', 'Title', 'Requested By', 'Dept', 'Mobile', 'Attendees', 'Status']
-    const rows = bookings.map((b, i) => [i + 1, format(parseISO(b.start_time), 'dd-MMM-yyyy'), format(parseISO(b.start_time), 'hh:mm a'), format(parseISO(b.end_time), 'hh:mm a'), b.rooms?.name || '', b.title || '', b.requester_name || '', b.requester_dept || '', b.requester_mobile || '', b.attendees_count || '', b.status || ''])
+    const hdrs = ['#', 'Date', 'Start', 'End', 'Room', 'Title', 'Requested By', 'Dept', 'Mobile', 'Attendees Count', 'Attendee Names', 'Status']
+    const rows = bookings.map((b, i) => [
+      i + 1,
+      format(new Date(b.start_time), 'dd-MMM-yyyy'),
+      format(new Date(b.start_time), 'hh:mm a'),
+      format(new Date(b.end_time), 'hh:mm a'),
+      b.rooms?.name || '',
+      b.title || '',
+      b.requester_name || '',
+      b.requester_dept || '',
+      b.requester_mobile || '',
+      b.attendees_count || '',
+      b.attendee_names || '',
+      b.status || ''
+    ])
     const csv = [hdrs, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
     a.download = `CRBS_${filters.from}_${filters.to}.csv`; a.click()
   }
 
-  const stats = { total: bookings.length, confirmed: bookings.filter(b => b.status === 'confirmed').length, pending: bookings.filter(b => b.status === 'pending').length, cancelled: bookings.filter(b => b.status === 'cancelled').length }
+  const stats = {
+    total: bookings.length,
+    confirmed: bookings.filter(b => b.status === 'confirmed').length,
+    pending: bookings.filter(b => b.status === 'pending').length,
+    cancelled: bookings.filter(b => b.status === 'cancelled').length
+  }
 
   return (
     <div>
@@ -87,7 +105,12 @@ export default function ReportsPage() {
       {bookings.length > 0 && (
         <>
           <div className="stat-grid" style={{ marginBottom: 16 }}>
-            {[{ l: 'Total', v: stats.total, c: '#1e40af', bg: '#dbeafe' }, { l: 'Confirmed', v: stats.confirmed, c: '#0f766e', bg: '#f0fdfa' }, { l: 'Pending', v: stats.pending, c: '#b45309', bg: '#fffbeb' }, { l: 'Cancelled', v: stats.cancelled, c: '#dc2626', bg: '#fef2f2' }].map(s => (
+            {[
+              { l: 'Total', v: stats.total, c: '#1e40af', bg: '#dbeafe' },
+              { l: 'Confirmed', v: stats.confirmed, c: '#0f766e', bg: '#f0fdfa' },
+              { l: 'Pending', v: stats.pending, c: '#b45309', bg: '#fffbeb' },
+              { l: 'Cancelled', v: stats.cancelled, c: '#dc2626', bg: '#fef2f2' }
+            ].map(s => (
               <div key={s.l} className="card stat-card" style={{ background: s.bg, border: `1px solid ${s.c}22` }}>
                 <div className="stat-val" style={{ color: s.c }}>{s.v}</div>
                 <div className="stat-label" style={{ color: s.c }}>{s.l}</div>
@@ -96,18 +119,34 @@ export default function ReportsPage() {
           </div>
           <div className="card report-table">
             <table>
-              <thead><tr><th>#</th><th>Date</th><th>Time</th><th>Room</th><th>Title</th><th>Requested By</th><th>Dept</th><th>Attendees</th><th>Status</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Room</th>
+                  <th>Title</th>
+                  <th>Requested By</th>
+                  <th>Dept</th>
+                  <th>Attendees</th>
+                  <th>Attendee Names</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
               <tbody>
                 {bookings.map((b, i) => (
                   <tr key={b.id}>
                     <td style={{ color: 'var(--text-3)', fontSize: 12 }}>{i + 1}</td>
-                    <td>{format(parseISO(b.start_time), 'dd MMM yyyy')}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{format(parseISO(b.start_time), 'hh:mm a')} – {format(parseISO(b.end_time), 'hh:mm a')}</td>
+                    <td>{format(new Date(b.start_time), 'dd MMM yyyy')}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{format(new Date(b.start_time), 'hh:mm a')} – {format(new Date(b.end_time), 'hh:mm a')}</td>
                     <td>{b.rooms?.name}</td>
                     <td><strong>{b.title}</strong></td>
                     <td>{b.requester_name}</td>
                     <td>{b.requester_dept || '—'}</td>
                     <td style={{ textAlign: 'center' }}>{b.attendees_count}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-2)', maxWidth: 200 }}>
+                      {b.attendee_names || <span style={{ color: 'var(--text-3)' }}>—</span>}
+                    </td>
                     <td><span className={`badge badge-${b.status === 'confirmed' ? 'confirmed' : b.status === 'pending' ? 'pending' : b.status === 'rejected' ? 'rejected' : 'cancelled'}`}>{b.status}</span></td>
                   </tr>
                 ))}
