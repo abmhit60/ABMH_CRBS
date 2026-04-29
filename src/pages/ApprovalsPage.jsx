@@ -106,10 +106,14 @@ export default function ApprovalsPage() {
                       <button className="btn btn-danger btn-sm" onClick={() => reject(b.id)}>Confirm Reject</button>
                     </div>
                   </div>
-                : <div className="bcard-actions" style={{ marginTop: 10 }}>
-                    <button className="btn btn-success btn-sm" onClick={() => approve(b.id)}>✓ Approve</button>
-                    <button className="btn btn-danger btn-sm" onClick={() => setRejecting(b.id)}>✕ Reject</button>
-                  </div>
+                : new Date(b.end_time) > new Date() ? (
+  <div className="bcard-actions" style={{ marginTop: 10 }}>
+    <button className="btn btn-success btn-sm" onClick={() => approve(b.id)}>✓ Approve</button>
+    <button className="btn btn-danger btn-sm" onClick={() => setRejecting(b.id)}>✕ Reject</button>
+  </div>
+) : (
+  <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-3)' }}>⏰ Meeting time has passed</div>
+)
             )}
 
             {/* CONFIRMED ACTIONS */}
@@ -153,11 +157,15 @@ export default function ApprovalsPage() {
                           <button className="btn btn-danger btn-sm" onClick={() => cancelConfirmed(b.id)}>Cancel Booking</button>
                         </div>
                       </div>
-                    : <div className="bcard-actions" style={{ marginTop: 10 }}>
-                        <button className="btn btn-outline btn-sm" onClick={() => { setRescheduling(b.id); setRf({ date: format(new Date(b.start_time), 'yyyy-MM-dd'), start: format(new Date(b.start_time), 'HH:mm'), end: format(new Date(b.end_time), 'HH:mm') }) }}>📅 Reschedule</button>
-                        <button className="btn btn-outline btn-sm" onClick={() => { setMoving(b.id); setNewRoomId('') }}>🚪 Move Room</button>
-                        <button className="btn btn-outline btn-sm" style={{ color: 'var(--danger)', borderColor: '#fca5a5' }} onClick={() => setRejecting(b.id)}>✕ Cancel</button>
-                      </div>
+                    : new Date(b.end_time) > new Date() ? (
+  <div className="bcard-actions" style={{ marginTop: 10 }}>
+    <button className="btn btn-outline btn-sm" onClick={() => { setRescheduling(b.id); setRf({ date: format(new Date(b.start_time), 'yyyy-MM-dd'), start: format(new Date(b.start_time), 'HH:mm'), end: format(new Date(b.end_time), 'HH:mm') }) }}>📅 Reschedule</button>
+    <button className="btn btn-outline btn-sm" onClick={() => { setMoving(b.id); setNewRoomId('') }}>🚪 Move Room</button>
+    <button className="btn btn-outline btn-sm" style={{ color: 'var(--danger)', borderColor: '#fca5a5' }} onClick={() => setRejecting(b.id)}>✕ Cancel</button>
+  </div>
+) : (
+  <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-3)' }}>✓ Meeting completed</div>
+)
             )}
           </div>
         ))
