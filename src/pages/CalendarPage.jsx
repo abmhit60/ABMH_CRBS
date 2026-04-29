@@ -1,4 +1,4 @@
-console.log('CalendarPage version: TZ-FIX-2')
+console.log('CalendarPage version: TZ-FIX-3')
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../components/auth/AuthContext'
@@ -48,7 +48,6 @@ const HEADER_H = 72
 
 const EventBlock = ({ b, canSee }) => {
   const [tooltip, setTooltip] = useState(false)
-  console.log(b.title, '| top:', topPx(b), '| height:', htPx(b), '| mins:', (new Date(b.end_time) - new Date(b.start_time)) / 60000)
   return (
     <div className="cal-event"
       style={{ top: topPx(b), height: htPx(b), background: eventColor(b) }}
@@ -79,6 +78,7 @@ const EventBlock = ({ b, canSee }) => {
           <div>👤 {b.requester_name}</div>
           {b.requester_dept && <div>🏢 {b.requester_dept}</div>}
           {b.attendees_count && <div>👥 {b.attendees_count} attendee{b.attendees_count > 1 ? 's' : ''}</div>}
+          {b.attendee_names && canSee(b) && <div>📋 {b.attendee_names}</div>}
           <div style={{
             marginTop: 6, fontSize: 11, fontWeight: 600,
             color: b.status === 'pending' ? '#fbbf24' : b.status === 'confirmed' ? '#34d399' : '#9ca3af'
@@ -106,7 +106,7 @@ export default function CalendarPage() {
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }))
   const [selDay, setSelDay] = useState(new Date())
   const [popup, setPopup] = useState(null)
-  const [form, setForm] = useState({ title: '', attendees: 1, startHour: 9, startMin: 0, endHour: 10, endMin: 0 })
+  const [form, setForm] = useState({ title: '', attendees: 1, attendeeNames: '', startHour: 9, startMin: 0, endHour: 10, endMin: 0 })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [mob, setMob] = useState(window.innerWidth < 768)
@@ -159,10 +159,8 @@ export default function CalendarPage() {
     if (conflict) return
 
     const endH = slot.h + 1 <= END_H ? slot.h + 1 : END_H
-    const endM = slot.m
-
     setPopup({ room, date: new Date(day), startHour: slot.h, startMin: slot.m })
-    setForm({ title: '', attendees: 1, startHour: slot.h, startMin: slot.m, endHour: endH, endMin: endM })
+    setForm({ title: '', attendees: 1, attendeeNames: '', startHour: slot.h, startMin: slot.m, endHour: endH, endMin: slot.m })
     setErr('')
   }
 
@@ -172,7 +170,7 @@ export default function CalendarPage() {
     const h = Math.min(Math.max(now.getHours(), START_H), END_H - 2)
     const m = now.getMinutes() < 30 ? 0 : 30
     setPopup({ room: rooms[0], date: new Date(selDay), startHour: h, startMin: m })
-    setForm({ title: '', attendees: 1, startHour: h, startMin: m, endHour: h + 1, endMin: m })
+    setForm({ title: '', attendees: 1, attendeeNames: '', startHour: h, startMin: m, endHour: h + 1, endMin: m })
     setErr('')
   }
 
@@ -188,6 +186,7 @@ export default function CalendarPage() {
       room_id: popup.room.id,
       title: form.title.trim(),
       attendees_count: Number(form.attendees) || 1,
+      attendee_names: form.attendeeNames.trim() || null,
       start_time: st.toISOString(),
       end_time: en.toISOString(),
       status: isSmall(popup.room.name) ? 'confirmed' : 'pending',
@@ -275,9 +274,19 @@ export default function CalendarPage() {
         </div>
       </div>
       <div className="field">
-        <label>Attendees</label>
+        <label>Attendees Count</label>
         <input type="number" value={form.attendees} min={1} max={popup.room.capacity || 50}
           onChange={e => setForm(f => ({ ...f, attendees: e.target.value }))} />
+      </div>
+      <div className="field">
+        <label>Attendee Names <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 400 }}>(optional)</span></label>
+        <textarea
+          placeholder="e.g. Dr. Sharma, Rani K, Naval M"
+          value={form.attendeeNames}
+          onChange={e => setForm(f => ({ ...f, attendeeNames: e.target.value }))}
+          rows={2}
+          style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+        />
       </div>
       {err && <div className="err-msg">{err}</div>}
       {!isSmall(popup.room.name) && (
@@ -317,56 +326,32 @@ export default function CalendarPage() {
           ))}
         </div>
 
-        {/* Grid */}
         <div className="cal-grid" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 280px)', overflowX: 'auto' }}>
           <div className="cal-grid-inner" style={{ display: 'flex', minWidth: 'max-content' }}>
 
-            {/* Time column */}
             <div style={{ flexShrink: 0, width: TIME_COL_W, position: 'sticky', left: 0, zIndex: 4, background: 'var(--surface)' }}>
-              <div style={{
-                height: HEADER_H,
-                borderBottom: '2px solid var(--border)',
-                borderRight: '1px solid var(--border)',
-                background: 'var(--surface-2)',
-                position: 'sticky',
-                top: 0,
-                zIndex: 4,
-              }} />
+              <div style={{ height: HEADER_H, borderBottom: '2px solid var(--border)', borderRight: '1px solid var(--border)', background: 'var(--surface-2)', position: 'sticky', top: 0, zIndex: 4 }} />
               {SLOTS.map((slot, i) => (
                 <div key={i} style={{
-                  height: SLOT_H,
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'flex-end',
-                  paddingRight: 8,
-                  paddingTop: 2,
-                  fontSize: 11,
+                  height: SLOT_H, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end',
+                  paddingRight: 8, paddingTop: 2, fontSize: 11,
                   color: slot.m === 0 ? 'var(--text-3)' : 'transparent',
                   fontFamily: "'JetBrains Mono', monospace",
                   borderTop: slot.m === 0 ? '1px solid var(--border)' : '1px solid transparent',
-                  borderRight: '1px solid var(--border)',
-                  background: 'var(--surface)',
-                  boxSizing: 'border-box',
+                  borderRight: '1px solid var(--border)', background: 'var(--surface)', boxSizing: 'border-box',
                 }}>
                   {slot.m === 0 ? format(new Date(2000, 0, 1, slot.h, 0), 'h a') : ''}
                 </div>
               ))}
             </div>
 
-            {/* Room columns */}
             <div style={{ display: 'flex', flex: 1 }}>
               {rooms.map(room => (
                 <div key={room.id} style={{ flex: 1, minWidth: 160, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
                   <div style={{
-                    height: HEADER_H,
-                    padding: '8px 10px',
-                    background: 'var(--surface-2)',
-                    borderBottom: '2px solid var(--border)',
-                    display: 'flex', flexDirection: 'column', justifyContent: 'center',
-                    flexShrink: 0,
-                    position: 'sticky',
-                    top: 0,
-                    zIndex: 3,
+                    height: HEADER_H, padding: '8px 10px', background: 'var(--surface-2)',
+                    borderBottom: '2px solid var(--border)', display: 'flex', flexDirection: 'column',
+                    justifyContent: 'center', flexShrink: 0, position: 'sticky', top: 0, zIndex: 3,
                   }}>
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: rc(room.name), marginBottom: 3 }} />
                     <div style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{room.name}</div>
@@ -377,12 +362,10 @@ export default function CalendarPage() {
                     onClick={e => slotClick(room, selDay, e)}>
                     {SLOTS.map((slot, i) => (
                       <div key={i} style={{
-                        position: 'absolute', left: 0, right: 0,
-                        top: i * SLOT_H, height: SLOT_H,
+                        position: 'absolute', left: 0, right: 0, top: i * SLOT_H, height: SLOT_H,
                         borderTop: slot.m === 0 ? '1px solid var(--border)' : '1px solid transparent',
                         background: slot.m === 0 ? 'transparent' : 'rgba(0,0,0,.008)',
-                        boxSizing: 'border-box',
-                        pointerEvents: 'none',
+                        boxSizing: 'border-box', pointerEvents: 'none',
                       }} />
                     ))}
                     {bkForDay(selDay, room.id).map(b => <EventBlock key={b.id} b={b} canSee={canSee} />)}
