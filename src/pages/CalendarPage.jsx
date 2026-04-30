@@ -1,4 +1,3 @@
-console.log('CalendarPage version: TZ-FIX-3')
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../components/auth/AuthContext'
@@ -95,6 +94,80 @@ const EventBlock = ({ b, canSee }) => {
         </div>
       )}
     </div>
+  )
+}
+
+const PopupContent = ({ popup, form, setForm, err, profile, startTimeOptions, endTimeOptions }) => {
+  if (!popup) return null
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+        <div style={{ width: 12, height: 12, borderRadius: '50%', background: rc(popup.room.name), flexShrink: 0 }} />
+        <span style={{ fontWeight: 700, fontSize: 14 }}>{popup.room.name}</span>
+        {isSmall(popup.room.name) && <span className="badge badge-confirmed" style={{ fontSize: 11 }}>Auto Confirm</span>}
+      </div>
+      <div className="meta-row">
+        <span className="meta-chip">📅 {format(popup.date, 'EEE, dd MMM')}</span>
+        <span className="meta-chip">🕐 {String(form.startHour).padStart(2, '0')}:{String(form.startMin).padStart(2, '0')}</span>
+      </div>
+      <div className="req-block">
+        <div className="req-row"><span className="req-label">Booking for</span><span className="req-val">{profile?.full_name}</span></div>
+        {profile?.department_name && <div className="req-row"><span className="req-label">Department</span><span className="req-val">{profile.department_name}</span></div>}
+      </div>
+      <div className="field">
+        <label>Meeting Title <span className="field-req">*</span></label>
+        <input type="text" placeholder="e.g. Weekly Department Meeting"
+          value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+      </div>
+      <div className="field-row">
+        <div className="field">
+          <label>Start Time</label>
+          <select value={`${form.startHour}:${form.startMin}`}
+            onChange={e => {
+              const [h, m] = e.target.value.split(':').map(Number)
+              const newEndH = h + 1 <= END_H ? h + 1 : END_H
+              setForm(f => ({ ...f, startHour: h, startMin: m, endHour: newEndH, endMin: m }))
+            }}>
+            {startTimeOptions().map(o => (
+              <option key={o.label} value={`${o.h}:${o.m}`}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label>End Time</label>
+          <select value={`${form.endHour}:${form.endMin}`}
+            onChange={e => {
+              const [h, m] = e.target.value.split(':').map(Number)
+              setForm(f => ({ ...f, endHour: h, endMin: m }))
+            }}>
+            {endTimeOptions().map(o => (
+              <option key={o.label} value={`${o.h}:${o.m}`}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="field">
+        <label>Attendees Count</label>
+        <input type="number" value={form.attendees} min={1} max={popup.room.capacity || 50}
+          onChange={e => setForm(f => ({ ...f, attendees: e.target.value }))} />
+      </div>
+      <div className="field">
+        <label>Attendee Names <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 400 }}>(optional)</span></label>
+        <textarea
+          placeholder="e.g. Dr. Sharma, Rani K, Naval M"
+          value={form.attendeeNames}
+          onChange={e => setForm(f => ({ ...f, attendeeNames: e.target.value }))}
+          rows={2}
+          style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+        />
+      </div>
+      {err && <div className="err-msg">{err}</div>}
+      {!isSmall(popup.room.name) && (
+        <div style={{ fontSize: 12, color: 'var(--pending)', background: 'var(--pending-bg)', borderRadius: 8, padding: '8px 12px' }}>
+          ⏳ Requires approval from Smita Hule
+        </div>
+      )}
+    </>
   )
 }
 
@@ -226,76 +299,7 @@ export default function CalendarPage() {
     return opts
   }
 
-  const PopupContent = () => popup && (
-    <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-        <div style={{ width: 12, height: 12, borderRadius: '50%', background: rc(popup.room.name), flexShrink: 0 }} />
-        <span style={{ fontWeight: 700, fontSize: 14 }}>{popup.room.name}</span>
-        {isSmall(popup.room.name) && <span className="badge badge-confirmed" style={{ fontSize: 11 }}>Auto Confirm</span>}
-      </div>
-      <div className="meta-row">
-        <span className="meta-chip">📅 {format(popup.date, 'EEE, dd MMM')}</span>
-        <span className="meta-chip">🕐 {String(form.startHour).padStart(2, '0')}:{String(form.startMin).padStart(2, '0')}</span>
-      </div>
-      <div className="req-block">
-        <div className="req-row"><span className="req-label">Booking for</span><span className="req-val">{profile?.full_name}</span></div>
-        {profile?.department_name && <div className="req-row"><span className="req-label">Department</span><span className="req-val">{profile.department_name}</span></div>}
-      </div>
-      <div className="field">
-        <label>Meeting Title <span className="field-req">*</span></label>
-        <input type="text" placeholder="e.g. Weekly Department Meeting"
-  value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
-      </div>
-      <div className="field-row">
-        <div className="field">
-          <label>Start Time</label>
-          <select value={`${form.startHour}:${form.startMin}`}
-            onChange={e => {
-              const [h, m] = e.target.value.split(':').map(Number)
-              const newEndH = h + 1 <= END_H ? h + 1 : END_H
-              setForm(f => ({ ...f, startHour: h, startMin: m, endHour: newEndH, endMin: m }))
-            }}>
-            {startTimeOptions().map(o => (
-              <option key={o.label} value={`${o.h}:${o.m}`}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label>End Time</label>
-          <select value={`${form.endHour}:${form.endMin}`}
-            onChange={e => {
-              const [h, m] = e.target.value.split(':').map(Number)
-              setForm(f => ({ ...f, endHour: h, endMin: m }))
-            }}>
-            {endTimeOptions().map(o => (
-              <option key={o.label} value={`${o.h}:${o.m}`}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div className="field">
-        <label>Attendees Count</label>
-        <input type="number" value={form.attendees} min={1} max={popup.room.capacity || 50}
-          onChange={e => setForm(f => ({ ...f, attendees: e.target.value }))} />
-      </div>
-      <div className="field">
-        <label>Attendee Names <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 400 }}>(optional)</span></label>
-        <textarea
-          placeholder="e.g. Dr. Sharma, Rani K, Naval M"
-          value={form.attendeeNames}
-          onChange={e => setForm(f => ({ ...f, attendeeNames: e.target.value }))}
-          rows={2}
-          style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
-        />
-      </div>
-      {err && <div className="err-msg">{err}</div>}
-      {!isSmall(popup.room.name) && (
-        <div style={{ fontSize: 12, color: 'var(--pending)', background: 'var(--pending-bg)', borderRadius: 8, padding: '8px 12px' }}>
-          ⏳ Requires approval from Smita Hule
-        </div>
-      )}
-    </>
-  )
+  const popupProps = { popup, form, setForm, err, profile, startTimeOptions, endTimeOptions }
 
   return (
     <div>
@@ -396,7 +400,7 @@ export default function CalendarPage() {
               <span className="sheet-title">New Booking</span>
               <button className="modal-close" onClick={closePopup}>✕</button>
             </div>
-            <div className="sheet-body"><PopupContent /></div>
+            <div className="sheet-body"><PopupContent {...popupProps} /></div>
             <div className="sheet-foot">
               <button className="btn btn-outline" style={{ flex: 1 }} onClick={closePopup}>Cancel</button>
               <button className="btn btn-primary" style={{ flex: 1 }} onClick={submit} disabled={busy}>
@@ -412,7 +416,7 @@ export default function CalendarPage() {
               <span className="modal-title">New Booking</span>
               <button className="modal-close" onClick={closePopup}>✕</button>
             </div>
-            <div className="modal-body"><PopupContent /></div>
+            <div className="modal-body"><PopupContent {...popupProps} /></div>
             <div className="modal-foot">
               <button className="btn btn-outline" onClick={closePopup}>Cancel</button>
               <button className="btn btn-primary" onClick={submit} disabled={busy}>
