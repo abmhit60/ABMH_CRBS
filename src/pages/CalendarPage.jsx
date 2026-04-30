@@ -244,7 +244,7 @@ export default function CalendarPage() {
       <div className="field">
         <label>Meeting Title <span className="field-req">*</span></label>
         <input type="text" placeholder="e.g. Weekly Department Meeting"
-          value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} autoFocus />
+  value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
       </div>
       <div className="field-row">
         <div className="field">
